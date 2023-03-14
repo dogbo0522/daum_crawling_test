@@ -1,42 +1,24 @@
-from itertools import count
-from bs4 import BeautifulSoup
-from urllib.request import Request, urlopen
-import pandas as ps
 import requests
-import re
+from bs4 import BeautifulSoup
 
-# reviewList = []
+url = 'https://search.daum.net/search?nil_suggest=btn&w=tot&DA=SBC&q=%EC%98%81%ED%99%94+%EA%B0%9C%EB%B4%89+%EC%98%88%EC%A0%95%EC%9E%91'
+headers = {
+	'User-Agent':'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.45 Safari/537.36'
+}
 
+response = requests.get(url, headers=headers)
 
-def daum_movie():
-    reviewList = []
-    for page in count(start=1):
-        url = 'http://movie.daum.net/moviedb/grade?movieId=111293&type=netizen&page=%s' % page
-        html = requests.get(url).text
-        soup = BeautifulSoup(html, 'html.parser')
-        review_div = soup.find_all('div', 'review_info')
-        if page >=94:
-            break;
+soup = BeautifulSoup(response.text, 'lxml')
 
-        for n in review_div:
-            grade = n.find('em', 'emph_grade').get_text().strip()
-            review = n.find('p', 'desc_review').get_text().strip().replace('\r', '')
-            date = n.find('span', 'info_append').get_text().strip()[2:10]
+movieInfoList = soup.find('ul', attrs={'class':'list_movie'}).find_all('li')
 
-            # month = int(date[4])
-            # day = int(date[6:])
+for movieInfo in movieInfoList:
+	movieImg = movieInfo.find('img')
+	movieTitle = movieInfo.find('a', attrs={'class':'txt_ellip'})
+	movieScore = movieInfo.find('dd', attrs={'class':'cont'})
 
-            # for m in range(12, 1, -1):
-            #
-            #     for d in range(31, 1, -1):
-            #         if m==month and d==day:
-            reviewList.append([date,grade,review])
-    fileName='/Users/JS-K/Documents/json/daum_review_20185341_00704.txt'
-    table = ps.DataFrame(reviewList)
-    table.to_csv(fileName, encoding='utf-8-sig', mode='w', index=True)
-    print('----------------------saved------------------------')
-    return reviewList
+    movieImgFix = movieImg['src'].split("%2Fmovie%2F")
 
-result = daum_movie()
-
-
+	print('이미지 : {}'.format(movieImg['src'] if movieImg else "X"))
+	print(f'제목 : {movieTitle.get_text() if movieTitle else "X"}')
+	print(f'개봉일 : {movieScore.get_text() if movieScore else "X"}')
